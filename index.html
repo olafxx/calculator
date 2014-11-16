@@ -1,0 +1,419 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  
+    <meta charset="utf-8" />
+
+</head>
+
+<body>
+
+<style>
+.calculator {
+	width:195px;
+	margin:200px auto;
+	font:18px Arial;
+	border:1px solid #ccc;
+	padding:5px;
+	}
+	.calculator__dispalay {
+		border:1px solid #ddd;
+		padding:5px;
+		text-align:right;
+		min-height:22px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		}
+	.calculator__btns {
+		margin:5px -5px;
+		border-top:1px solid #ccc;
+		padding:5px 5px 0;
+		}	
+		.calculator__btns_item {
+			border-radius:5px;
+			background:#ddd;
+			display:inline-block;
+			min-width:15px;
+			padding:10px;
+			cursor:pointer;
+			font-size:12px;
+			margin:2px;
+			text-align:center;      
+			}
+		.calculator__btns_item:hover {
+			background:#ccc;
+			}
+ 
+</style>
+
+<div id="block1"></div> 
+
+<script>
+
+/*calculator*/
+var id = "block1";
+
+
+var fileStorage = id+'.txt';
+var storage = function(fileName){
+	       
+		  window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+		  
+		  var fs = null;
+		  var self = this;
+		  self.num = 0;
+		  
+ 		  function errorHandler(e) {
+			var msg = '';
+			switch (e.code) {
+			  case FileError.QUOTA_EXCEEDED_ERR:
+				msg = 'QUOTA_EXCEEDED_ERR';
+				break;
+			  case FileError.NOT_FOUND_ERR:
+				msg = 'NOT_FOUND_ERR';
+				break;
+			  case FileError.SECURITY_ERR:
+				msg = 'SECURITY_ERR';
+				break;
+			  case FileError.INVALID_MODIFICATION_ERR:
+				msg = 'INVALID_MODIFICATION_ERR';
+				break;
+			  case FileError.INVALID_STATE_ERR:
+				msg = 'INVALID_STATE_ERR';
+				break;
+			  default:
+				msg = 'Unknown Error';
+				break;
+			};
+			document.querySelector('#example-list-fs-ul').innerHTML = 'Error: ' + msg;
+		  }
+
+		  
+		  self.init = function() {
+	 
+			window.requestFileSystem(window.TEMPORARY, 128*128, function(filesystem) {
+
+ 				fs = filesystem;  
+			 	 
+				fs.root.getFile(fileName, {create: true}, function(fileEntry) {
+	
+				 }, errorHandler);
+					 
+			}, errorHandler);
+			
+		  }();
+		  
+ 		  
+		  self.setResultFromFile = function(fileName, number) {
+		  
+			window.requestFileSystem(window.TEMPORARY, 128*128, function(fs) {
+			
+			  fs.root.getFile(fileName, {create: false}, function(fileEntry) {
+
+				fileEntry.remove(function() {
+				 
+				 
+					fs.root.getFile(fileName, {create: true}, function(fileEntry) {
+
+						fileEntry.createWriter(function(fileWriter) {
+
+						  fileWriter.onwriteend = function(e) {
+							console.log('Write completed.');
+						  };
+
+						  fileWriter.onerror = function(e) {
+							console.log('Write failed: ' + e.toString());
+						  };
+						  
+						  window.URL = window.URL || window.webkitURL;
+						   
+						  var bb = new Blob([number],{type: 'text/plain'}); 
+						  fileWriter.write(bb);
+						   
+						}, errorHandler);
+
+					  }, errorHandler);				 
+				 
+				 
+				}, errorHandler);
+
+			  }, errorHandler);
+			}, errorHandler);
+						  
+				   
+ 		  }
+		  
+		  
+		  self.getResultFromFile = function(fileName) {
+ 			
+			window.requestFileSystem(window.TEMPORARY, 128*128, function(filesystem) {
+			
+				  
+				 fs.root.getFile(fileName, {create: true}, function(fileEntry) {
+
+					 fileEntry.file(function(file) {
+					 
+					   var reader = new FileReader();
+	   
+					   reader.onloadend = function(e) {
+					  
+ 						 self.num = this.result;
+ 						 
+					   };
+
+					   reader.readAsText(file);
+					   
+					}, errorHandler);
+
+				  }, errorHandler);			  
+				  
+ 			  
+			}, errorHandler);
+			
+			setTimeout(function(){
+				return self.num;
+			},500);	
+			
+		  }		  
+  
+		return self;
+	  
+};
+
+var _storage = new storage(fileStorage);
+var number = _storage.getResultFromFile(fileStorage)	
+
+
+
+setTimeout(function(){ 
+	   
+	var calculation = function(toDispaly){
+		
+ 		var str = "";
+		var self = this;
+		self.regimCalculation = true;
+		var binary;
+		
+		var clear = function(){
+ 			str = "";
+			toDispaly.clear();
+		};
+		
+		var check = function(option){
+			
+			var marker = true;
+			
+			if(option == "Infinity"){
+				alert("Бесконечность");
+				marker = false;			
+			}
+			
+			if(option === undefined){
+				marker = false;			
+			}	
+			 
+			return marker;	
+		};
+		
+		var result = function(){
+			try{
+			
+				str = eval(str);
+				
+				if(!check(str)) {
+					clear(); 
+					return;
+				}	
+			
+				if(!self.regimCalculation) {
+				
+					binary = str;
+				    binary = parseInt(binary).toString(2);
+					 
+				    str = (binary != "NaN") ? binary : str;
+				}				 
+				toDispaly.change(str);
+
+				
+			}catch(event){
+				alert("Ошибка вычисления");
+				clear();
+			}
+		};
+		
+		var changeRegimCalculation = function(){
+			self.regimCalculation = !self.regimCalculation;
+			clear();
+		};	
+		
+		
+		var change = function(operation){
+	
+			
+			if(operation == undefined) {
+				operation = "";
+			}else{
+ 				str += operation;
+			}	
+			 
+			toDispaly.change(str);
+	 
+		};	
+		
+		return {
+			result:result,
+			check:check,
+			clear:clear,
+			changeRegimCalculation:changeRegimCalculation,
+			change:change
+		}
+
+	}
+
+	var display = function(){
+	 
+		var self = document.createElement("div");  
+		self.className = "calculator__dispalay";
+	 
+		self.innerHTML = _storage.num;
+		 
+		var str = ""; 
+ 		
+		self.change = function(option){
+		
+			_storage.setResultFromFile(fileStorage,option)
+			self.innerHTML = option;
+	 
+		};
+		
+		self.clear = function(){
+			self.innerHTML = "";
+		};
+		 
+		return self;
+		 
+	}
+
+	var btn = function(name, operation, calculation){
+	   
+	   var self = document.createElement("div");
+	   self.className = "calculator__btns_item";
+	   self.innerHTML = name;
+
+	   
+	   self.addEventListener("mouseup",  clickBtn, false);
+	   
+	   function clickBtn () {
+	 
+		  switch(operation){
+			case "": 
+			   calculation.clear();
+			   break;
+
+			case "=":  
+			   calculation.result();
+			   break;
+			   
+			case "rd":  
+			   calculation.changeRegimCalculation();
+			   break;
+			   
+			default: 	
+			   calculation.change(operation)
+		  }	
+		   
+		  
+	   }
+	   
+	   return self;
+		
+	}
+
+	var blockBtns = function(calculation){
+
+		var self = document.createElement("div");  
+		self.className = "calculator__btns";
+		
+				  //name,operation 
+		btn1 =  new btn("1","1",calculation);
+		self.appendChild(btn1);
+		
+		btn2  =  new btn("2","2",calculation);
+		self.appendChild(btn2);
+
+		btn3 =  new btn("3","3",calculation);
+		self.appendChild(btn3);
+
+		btn4 =  new btn("4","4",calculation);
+		self.appendChild(btn4);
+
+		btn5 =  new btn("5","5",calculation);
+		self.appendChild(btn5);
+
+		btn6 =  new btn("6","6",calculation);
+		self.appendChild(btn6);
+
+		btn7 =  new btn("7","7",calculation);
+		self.appendChild(btn7);
+
+		btn8 =  new btn("8","8",calculation);
+		self.appendChild(btn8);
+
+		btn9 =  new btn("9","9",calculation);
+		self.appendChild(btn9);
+
+		btn10 =  new btn("0","0",calculation);
+		self.appendChild(btn10);
+		
+		btn11 =  new btn("Сумма"," + ",calculation);	 
+		self.appendChild(btn11);
+
+		btn12 =  new btn("Вычитание"," - ",calculation);	 
+		self.appendChild(btn12);
+
+		btn13 =  new btn("Умножение"," * ",calculation);	 
+		self.appendChild(btn13);
+
+		btn14 =  new btn("Деление"," / ",calculation);	 
+		self.appendChild(btn14);
+
+		btn15 =  new btn("Результат","=",calculation);
+		self.appendChild(btn15);
+		
+		btn16 =  new btn("Сбросить","",calculation);
+		self.appendChild(btn16);
+			
+		btn16 =  new btn("Режим дисплея","rd",calculation);
+		self.appendChild(btn16);
+			
+		return  self;
+
+	}
+
+	var calculator = function(){
+		
+		var self = document.createElement("div");  
+		self.className = "calculator";
+		 
+		var blockDisplay = new display();
+		self.appendChild(blockDisplay);
+		 
+		var _calculation =  new calculation(blockDisplay);
+		
+		var _blockBtns = new blockBtns(_calculation);
+		self.appendChild(_blockBtns);
+	 
+		return self;
+	}
+
+	/**/
+	 
+	var calc = new calculator();
+	document.getElementById(id).appendChild(calc); 
+
+},500);	
+</script>
+  
+</body>
+</html>
